@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Any
 
 import streamlit as st
 
@@ -69,13 +68,24 @@ def build_ui() -> None:
     if ask_button and question.strip():
         try:
             LOGGER.info("User question: %s", question)
+            start_time = time.time()
             pipeline = RAGPipeline()
-            result = pipeline.ask(question)
-            answer = result["answer"]
-            documents = result["documents"]
-            context = result["context"]
+            prepared = pipeline.prepare_question(question)
+            documents = prepared["documents"]
+            context = prepared["context"]
 
-            eval_metrics = evaluate_response(answer, context, time.time())
+            if not documents:
+                st.warning("I couldn't find this information in the provided document.")
+                return
+
+            answer_placeholder = st.empty()
+            answer_tokens: list[str] = []
+            for token in pipeline.stream_answer(prepared):
+                answer_tokens.append(token)
+                answer_placeholder.markdown("".join(answer_tokens))
+
+            answer = "".join(answer_tokens).strip()
+            eval_metrics = evaluate_response(answer, context, start_time)
             retrieval_metrics = evaluate_retrieval(documents)
             eval_metrics.update(retrieval_metrics)
 

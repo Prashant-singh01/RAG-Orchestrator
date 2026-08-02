@@ -24,6 +24,23 @@ class DocumentLoader:
         else:
             self.pdf_path = str((base_dir / resolved_path).resolve())
 
+        if not Path(self.pdf_path).is_file():
+            fallback_pdf = next(
+                (
+                    candidate.resolve()
+                    for candidate in sorted((base_dir / "data").glob("*.pdf"))
+                    if candidate.is_file()
+                ),
+                None,
+            )
+            if fallback_pdf is not None:
+                self.logger.warning(
+                    "Requested PDF %s was not found. Falling back to available sample PDF %s.",
+                    self.pdf_path,
+                    fallback_pdf,
+                )
+                self.pdf_path = str(fallback_pdf)
+
     def load_documents(self) -> list[Any]:
         """Load the PDF file and return LangChain document chunks."""
         try:

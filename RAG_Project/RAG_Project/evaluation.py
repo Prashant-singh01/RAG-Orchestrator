@@ -18,11 +18,12 @@ def evaluate_response(answer: str, context: str, start_time: float) -> dict[str,
         Dictionary containing evaluation metrics.
     """
     response_time = round(time.time() - start_time, 4)
+    context_chunks = [chunk for chunk in context.split("\n\n") if chunk.strip()]
     return {
-        "retrieved_chunks_count": len(context.split("\n\n")) if context else 0,
+        "retrieved_chunks_count": len(context_chunks),
         "answer_length": len(answer.strip()),
         "response_time_seconds": response_time,
-        "context_exists": bool(context.strip()),
+        "context_exists": bool(context_chunks),
     }
 
 
@@ -35,7 +36,9 @@ def evaluate_retrieval(documents: list[Any]) -> dict[str, Any]:
     Returns:
         Retrieval metrics dictionary.
     """
+    chunk_lengths = [len(document.page_content) for document in documents]
     return {
         "retrieved_chunks_count": len(documents),
         "context_exists": bool(documents),
+        "average_chunk_length": round(sum(chunk_lengths) / len(chunk_lengths), 2) if chunk_lengths else 0,
     }
